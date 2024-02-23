@@ -206,9 +206,6 @@ public class ClientManager extends UBus.Component {
     public @NonNull <T> UStatus registerClient(@NonNull String packageName, @NonNull UEntity entity,
             @NonNull IBinder clientToken, @NonNull T listener) {
         try {
-            // TODO: PELE - Remove this logging eventually
-            Log.d(TAG, "ParcelableUEntity: " + entity);
-
             checkStringNotEmpty(packageName, "Package name is empty");
             checkStringNotEmpty(entity.getName(), "Entity name is empty");
             checkArgument(entity.hasVersionMajor(), "Entity version is empty");

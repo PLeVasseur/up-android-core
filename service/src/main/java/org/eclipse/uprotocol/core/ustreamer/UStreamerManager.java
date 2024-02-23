@@ -52,7 +52,6 @@ public class UStreamerManager {
     }
 
     public boolean connect() {
-        Log.i(TAG, "inside UStreamerManager connect()");
         final Intent intent = new Intent(ACTION_BIND_UBUS);
         String mServiceConfig = "org.eclipse.uprotocol.core";
         intent.setPackage(mServiceConfig);

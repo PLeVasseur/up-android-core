@@ -50,9 +50,6 @@ public class UBusAdapter extends IUBus.Stub {
     public ParcelableUStatus registerClient(String packageName, ParcelableUEntity entity, IBinder clientToken,
             int flags, IUListener listener) {
         try {
-            // TODO: PELE - Remove this logging eventually
-            Log.d("UBusAdapter", "ParcelableUEntity: " + entity);
-
             return new ParcelableUStatus(mUBus.registerClient(packageName, entity.getWrapped(),  clientToken, listener));
         } catch (Exception e) {
             return new ParcelableUStatus(toStatus(e));
