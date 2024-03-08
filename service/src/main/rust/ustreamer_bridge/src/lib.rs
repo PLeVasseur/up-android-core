@@ -34,10 +34,15 @@ use protobuf::Message;
 use once_cell::sync::OnceCell;
 
 use std::any::type_name;
+use std::cell::RefCell;
 use std::time::Duration;
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
 use up_client_android_rust::transport_builder::AndroidTransportBuilder;
+use up_rust::uprotocol::uri::uauthority::Number;
+use ustreamer::transport_router::UTransportRouterConfig;
+use ustreamer::ustreamer::UStreamer;
+use ustreamer::config::{BookkeepingConfig, IngressEgressQueueConfig, Route, TaggedTransportRouterConfig, UStreamerConfig};
 use ustreamer::utransport_builder::UTransportBuilder;
 
 fn type_of<T>(_: &T) -> &'static str {
@@ -150,9 +155,24 @@ pub extern "system" fn Java_org_eclipse_uprotocol_core_ustreamer_UStreamerGlue_f
     }
     let java_vm = java_vm.unwrap();
 
-    let android_transport_builder = AndroidTransportBuilder { ubus: IUBUS_INSTANCE.get().expect("ubus is not initialized").clone() };
+    let android_transport_builder = Box::new(AndroidTransportBuilder { ubus: IUBUS_INSTANCE.get().expect("ubus is not initialized").clone() });
 
-    let up_client_android = android_transport_builder.build();
+    let android_transport_router_config = UTransportRouterConfig::new(android_transport_builder, true);
+
+    let tagged_android_transport_router_config = TaggedTransportRouterConfig::new(0, "android_transport".to_string(), 100, android_transport_router_config.unwrap());
+    
+    let local_uauthority = UAuthority {
+        name: Some("android_host".to_string()),
+        number: Some(Number::Ip(vec![192, 168, 1, 200])),
+        ..Default::default()
+    };
+    
+    let local_route = Route::new(local_uauthority, 0);
+
+    let routes = vec![local_route.unwrap()];
+    
+    let android_streamer_config = UStreamerConfig::new(vec![tagged_android_transport_router_config.unwrap()], IngressEgressQueueConfig::new(100, 100).unwrap(), BookkeepingConfig::new(100).unwrap(), routes);
+    let android_streamer = UStreamer::start(android_streamer_config.unwrap());
 
     let mut sleep_counter: u64 = 0;
     let run = 25;
