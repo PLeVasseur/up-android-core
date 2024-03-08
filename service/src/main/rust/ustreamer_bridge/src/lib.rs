@@ -37,6 +37,8 @@ use std::any::type_name;
 use std::time::Duration;
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
+use up_client_android_rust::transport_builder::AndroidTransportBuilder;
+use ustreamer::utransport_builder::UTransportBuilder;
 
 fn type_of<T>(_: &T) -> &'static str {
     type_name::<T>()
@@ -147,6 +149,10 @@ pub extern "system" fn Java_org_eclipse_uprotocol_core_ustreamer_UStreamerGlue_f
         panic!("unable to obtain java_vm: {:?}", java_vm);
     }
     let java_vm = java_vm.unwrap();
+
+    let android_transport_builder = AndroidTransportBuilder { ubus: IUBUS_INSTANCE.get().expect("ubus is not initialized").clone() };
+
+    let up_client_android = android_transport_builder.build();
 
     let mut sleep_counter: u64 = 0;
     let run = 25;

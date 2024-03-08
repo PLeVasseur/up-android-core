@@ -52,7 +52,7 @@ dependencies = [
 [[package]]
 name = "aidl-rust-codegen"
 version = "0.1.5-SNAPSHOT"
-source = "git+https://github.com/PLeVasseur/up-client-android-rust.git?branch=feature/ustreamer-integration-check#ac650e2bfdf0a398344c045adf0fa8918f091c14"
+source = "git+https://github.com/PLeVasseur/up-client-android-rust.git?branch=feature/ustreamer-integration-check#a882b4b3284350b03781760d2b34c8b95c0ffb40"
 dependencies = [
  "android_logger",
  "anyhow",
@@ -3129,7 +3129,7 @@ dependencies = [
 [[package]]
 name = "up-client-android-rust"
 version = "0.1.5-SNAPSHOT"
-source = "git+https://github.com/PLeVasseur/up-client-android-rust.git?branch=feature/ustreamer-integration-check#ac650e2bfdf0a398344c045adf0fa8918f091c14"
+source = "git+https://github.com/PLeVasseur/up-client-android-rust.git?branch=feature/ustreamer-integration-check#a882b4b3284350b03781760d2b34c8b95c0ffb40"
 dependencies = [
  "aidl-rust-codegen",
  "async-trait",
