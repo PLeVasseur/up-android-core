@@ -39,6 +39,7 @@ use std::time::Duration;
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
 use up_client_android_rust::transport_builder::AndroidTransportBuilder;
+use up_client_android_rust::UpClientAndroid;
 use up_rust::uprotocol::uri::uauthority::Number;
 use ustreamer::transport_router::UTransportRouterConfig;
 use ustreamer::ustreamer::UStreamer;
@@ -126,15 +127,15 @@ pub extern "system" fn Java_org_eclipse_uprotocol_core_ustreamer_UStreamerGlue_f
     let my_iulistener = MyIUListener;
     let my_iulistener_binder = BnUListener::new_binder(my_iulistener, BinderFeatures::default());
 
-    let bytes = uentity.write_to_bytes().unwrap();
+    let bytes = uentity.clone().write_to_bytes().unwrap();
     let size = bytes.len() as i32;
 
     let uentity_size = format!("uentity_size: {}", size);
     let uentity_bytes = format!("bytes: {:?}", bytes);
 
-    let ustatus_registerClient = IUBUS_INSTANCE.get().expect("ubus is not initialized").registerClient(&package_name, &uentity.into(), &client_token, my_flags, &my_iulistener_binder);
-
-    let ustatus_registerClient_string = format!("ustatus_registerClient: {:?}", ustatus_registerClient);
+    // let ustatus_registerClient = IUBUS_INSTANCE.get().expect("ubus is not initialized").registerClient(&package_name, &uentity.clone().into(), &client_token, my_flags, &my_iulistener_binder);
+    //
+    // let ustatus_registerClient_string = format!("ustatus_registerClient: {:?}", ustatus_registerClient);
 
     let good_uuri = UUri {
         entity: Some(UEntity {
@@ -155,28 +156,30 @@ pub extern "system" fn Java_org_eclipse_uprotocol_core_ustreamer_UStreamerGlue_f
     }
     let java_vm = java_vm.unwrap();
 
-    let android_transport_builder = Box::new(AndroidTransportBuilder { ubus: IUBUS_INSTANCE.get().expect("ubus is not initialized").clone() });
+    // let android_transport_builder = Box::new(AndroidTransportBuilder { ubus: IUBUS_INSTANCE.get().expect("ubus is not initialized").clone(), package: package_name.to_string(), entity: uentity });
+    //
+    // let android_transport_router_config = UTransportRouterConfig::new(android_transport_builder, true);
+    //
+    // let tagged_android_transport_router_config = TaggedTransportRouterConfig::new(0, "android_transport".to_string(), 100, android_transport_router_config.unwrap());
+    //
+    // let local_uauthority = UAuthority {
+    //     name: Some("android_host".to_string()),
+    //     number: Some(Number::Ip(vec![192, 168, 1, 200])),
+    //     ..Default::default()
+    // };
+    //
+    // let local_route = Route::new(local_uauthority, 0);
+    //
+    // let routes = vec![local_route.unwrap()];
+    //
+    // let android_streamer_config = UStreamerConfig::new(vec![tagged_android_transport_router_config.unwrap()], IngressEgressQueueConfig::new(100, 100).unwrap(), BookkeepingConfig::new(100).unwrap(), routes);
+    // let android_streamer = UStreamer::start(android_streamer_config.unwrap());
 
-    let android_transport_router_config = UTransportRouterConfig::new(android_transport_builder, true);
-
-    let tagged_android_transport_router_config = TaggedTransportRouterConfig::new(0, "android_transport".to_string(), 100, android_transport_router_config.unwrap());
-    
-    let local_uauthority = UAuthority {
-        name: Some("android_host".to_string()),
-        number: Some(Number::Ip(vec![192, 168, 1, 200])),
-        ..Default::default()
-    };
-    
-    let local_route = Route::new(local_uauthority, 0);
-
-    let routes = vec![local_route.unwrap()];
-    
-    let android_streamer_config = UStreamerConfig::new(vec![tagged_android_transport_router_config.unwrap()], IngressEgressQueueConfig::new(100, 100).unwrap(), BookkeepingConfig::new(100).unwrap(), routes);
-    let android_streamer = UStreamer::start(android_streamer_config.unwrap());
+    let android_transport = UpClientAndroid::new(IUBUS_INSTANCE.get().expect("ubus is not initialized").clone(), &package_name, &uentity);
 
     let mut sleep_counter: u64 = 0;
     let run = 25;
-    task::spawn(async move {
+    task::spawn_local(async move {
         info!("entered newly spawned task");
         let task_local_env = java_vm.attach_current_thread_as_daemon();
         if task_local_env.is_err() {
@@ -184,9 +187,11 @@ pub extern "system" fn Java_org_eclipse_uprotocol_core_ustreamer_UStreamerGlue_f
         }
         loop {
             info!("top of loop");
-            let ustatus_enableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").enableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
+            let ustatus_enableDispatchingTask_success = android_transport.enable_dispatching(good_uuri.clone()).await;
+            // let ustatus_enableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").enableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
             info!("ustatus_enableDispatchingTask: {:?}", ustatus_enableDispatchingTask_success);
-            let ustatus_disableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").disableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
+            let ustatus_disableDispatchingTask_success = android_transport.disable_dispatching(good_uuri.clone()).await;
+            // let ustatus_disableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").disableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
             info!("ustatus_disableDispatchingTask: {:?}", ustatus_disableDispatchingTask_success);
 
             info!("sleeping for 1 second, sleep_counter, run #: {run},  {sleep_counter}");
@@ -203,7 +208,7 @@ pub extern "system" fn Java_org_eclipse_uprotocol_core_ustreamer_UStreamerGlue_f
                               &uentity_computed_size,
                               &uentity_size,
                               &uentity_bytes,
-                              &ustatus_registerClient_string,
+                              // &ustatus_registerClient_string,
                               ];
     let status_string = status_strings.join("\n");
 
