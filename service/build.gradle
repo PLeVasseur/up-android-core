@@ -99,6 +99,9 @@ android {
             }
         }
         test.assets.srcDirs += files("$projectDir/src/test/".toString())
+        main {
+            jniLibs.srcDirs = ["src/main/jniLibs"]
+        }
     }
 
     testOptions {

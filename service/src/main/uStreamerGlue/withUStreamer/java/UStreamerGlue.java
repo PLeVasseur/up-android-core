@@ -1,3 +1,5 @@
+package org.eclipse.uprotocol.core.ustreamer;
+
 import android.os.IBinder;
 
 public class UStreamerGlue {

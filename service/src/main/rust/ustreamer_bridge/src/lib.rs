@@ -35,6 +35,7 @@ use once_cell::sync::OnceCell;
 
 use std::any::type_name;
 use std::cell::RefCell;
+use std::panic::catch_unwind;
 use std::time::Duration;
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
@@ -77,9 +78,17 @@ pub extern "system" fn Java_org_eclipse_uprotocol_core_ustreamer_UStreamerGlue_f
                                                      binder: jobject)
                                                      -> jstring {
 
+    std::panic::set_hook(Box::new(|panic_info| {
+        // Log the panic info or print to stderr
+        eprintln!("Panic occurred: {:?}", panic_info);
+    }));
+
+
     android_logger::init_once(
             Config::default().with_max_level(LevelFilter::Trace),
         );
+
+    info!("entered ustreamer_bridge!");
 
     // TODO: Examine this more closely and ensure that if something bad happens in unsafe-land
     //   we react appropriately.
@@ -156,6 +165,8 @@ pub extern "system" fn Java_org_eclipse_uprotocol_core_ustreamer_UStreamerGlue_f
     }
     let java_vm = java_vm.unwrap();
 
+    info!("retrieved java_vm!");
+
     // let android_transport_builder = Box::new(AndroidTransportBuilder { ubus: IUBUS_INSTANCE.get().expect("ubus is not initialized").clone(), package: package_name.to_string(), entity: uentity });
     //
     // let android_transport_router_config = UTransportRouterConfig::new(android_transport_builder, true);
@@ -177,28 +188,42 @@ pub extern "system" fn Java_org_eclipse_uprotocol_core_ustreamer_UStreamerGlue_f
 
     let android_transport = UpClientAndroid::new(IUBUS_INSTANCE.get().expect("ubus is not initialized").clone(), &package_name, &uentity);
 
+    info!("UpClientAndroid::new()!");
+
     let mut sleep_counter: u64 = 0;
     let run = 25;
-    task::spawn_local(async move {
+    task::spawn(async move {
         info!("entered newly spawned task");
-        let task_local_env = java_vm.attach_current_thread_as_daemon();
-        if task_local_env.is_err() {
-            panic!("unable to attach spawned task to jvm: {:?}", task_local_env);
-        }
-        loop {
-            info!("top of loop");
-            let ustatus_enableDispatchingTask_success = android_transport.enable_dispatching(good_uuri.clone()).await;
-            // let ustatus_enableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").enableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
-            info!("ustatus_enableDispatchingTask: {:?}", ustatus_enableDispatchingTask_success);
-            let ustatus_disableDispatchingTask_success = android_transport.disable_dispatching(good_uuri.clone()).await;
-            // let ustatus_disableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").disableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
-            info!("ustatus_disableDispatchingTask: {:?}", ustatus_disableDispatchingTask_success);
-
-            info!("sleeping for 1 second, sleep_counter, run #: {run},  {sleep_counter}");
-            std::thread::sleep(Duration::from_secs(1));
-            sleep_counter += 1;
-        }
     });
+    // std::thread::spawn(move || {
+    //     task::block_on(task::spawn_local(async move {
+    //         let result = catch_unwind(|| {
+    //             info!("entered newly spawned task");
+    //         });
+    //         if let Err(err) = result {
+    //             // Log or handle the panic
+    //             eprintln!("Task panicked: {:?}", err);
+    //         }
+    //         // info!("entered newly spawned task");
+    //         // let task_local_env = java_vm.attach_current_thread_as_daemon();
+    //         // if task_local_env.is_err() {
+    //         //     panic!("unable to attach spawned task to jvm: {:?}", task_local_env);
+    //         // }
+    //         // loop {
+    //         //     info!("top of loop");
+    //         //     let ustatus_enableDispatchingTask_success = android_transport.enable_dispatching(good_uuri.clone()).await;
+    //         //     // let ustatus_enableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").enableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
+    //         //     info!("ustatus_enableDispatchingTask: {:?}", ustatus_enableDispatchingTask_success);
+    //         //     let ustatus_disableDispatchingTask_success = android_transport.disable_dispatching(good_uuri.clone()).await;
+    //         //     // let ustatus_disableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").disableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
+    //         //     info!("ustatus_disableDispatchingTask: {:?}", ustatus_disableDispatchingTask_success);
+    //         //
+    //         //     info!("sleeping for 1 second, sleep_counter, run #: {run},  {sleep_counter}");
+    //         //     task::sleep(Duration::from_secs(1)).await;
+    //         //     sleep_counter += 1;
+    //         // }
+    //     }));
+    // });
 
     let empty_string = "";
     let status_strings = vec![empty_string,
