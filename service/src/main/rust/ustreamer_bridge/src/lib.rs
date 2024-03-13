@@ -186,44 +186,41 @@ pub extern "system" fn Java_org_eclipse_uprotocol_core_ustreamer_UStreamerGlue_f
     // let android_streamer_config = UStreamerConfig::new(vec![tagged_android_transport_router_config.unwrap()], IngressEgressQueueConfig::new(100, 100).unwrap(), BookkeepingConfig::new(100).unwrap(), routes);
     // let android_streamer = UStreamer::start(android_streamer_config.unwrap());
 
-    let android_transport = UpClientAndroid::new(IUBUS_INSTANCE.get().expect("ubus is not initialized").clone(), &package_name, &uentity);
-
-    info!("UpClientAndroid::new()!");
-
     let mut sleep_counter: u64 = 0;
-    let run = 25;
-    task::spawn(async move {
-        info!("entered newly spawned task");
+    let run = 26;
+
+    std::thread::spawn(move || {
+        info!("entered newly spawned thread");
+        task::block_on(async  move {
+            info!("entered blocking on newly spawned thread");
+
+            let task_local_env = java_vm.attach_current_thread_as_daemon();
+            if task_local_env.is_err() {
+                panic!("unable to attach spawned task to jvm: {:?}", task_local_env);
+            }
+
+            let android_transport = UpClientAndroid::new(IUBUS_INSTANCE.get().expect("ubus is not initialized").clone(), &package_name, &uentity);
+            info!("created UpClientAndroid on new thread!");
+
+            let connect_status = android_transport.connect().await;
+            info!("android_transport.connect() status: {:?}", connect_status);
+
+            loop {
+                info!("top of loop :)");
+
+                let ustatus_enableDispatchingTask_success = android_transport.enable_dispatching(good_uuri.clone()).await;
+                // let ustatus_enableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").enableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
+                info!("ustatus_enableDispatchingTask: {:?}", ustatus_enableDispatchingTask_success);
+                let ustatus_disableDispatchingTask_success = android_transport.disable_dispatching(good_uuri.clone()).await;
+                // let ustatus_disableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").disableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
+                info!("ustatus_disableDispatchingTask: {:?}", ustatus_disableDispatchingTask_success);
+
+                info!("sleeping for 1 second, sleep_counter, run #: {run},  {sleep_counter}");
+                task::sleep(Duration::from_secs(1)).await;
+                sleep_counter += 1;
+            }
+        });
     });
-    // std::thread::spawn(move || {
-    //     task::block_on(task::spawn_local(async move {
-    //         let result = catch_unwind(|| {
-    //             info!("entered newly spawned task");
-    //         });
-    //         if let Err(err) = result {
-    //             // Log or handle the panic
-    //             eprintln!("Task panicked: {:?}", err);
-    //         }
-    //         // info!("entered newly spawned task");
-    //         // let task_local_env = java_vm.attach_current_thread_as_daemon();
-    //         // if task_local_env.is_err() {
-    //         //     panic!("unable to attach spawned task to jvm: {:?}", task_local_env);
-    //         // }
-    //         // loop {
-    //         //     info!("top of loop");
-    //         //     let ustatus_enableDispatchingTask_success = android_transport.enable_dispatching(good_uuri.clone()).await;
-    //         //     // let ustatus_enableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").enableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
-    //         //     info!("ustatus_enableDispatchingTask: {:?}", ustatus_enableDispatchingTask_success);
-    //         //     let ustatus_disableDispatchingTask_success = android_transport.disable_dispatching(good_uuri.clone()).await;
-    //         //     // let ustatus_disableDispatchingTask_success = IUBUS_INSTANCE.get().expect("ubus is not initialized").disableDispatching(&good_uuri.clone().into(), my_flags, &client_token);
-    //         //     info!("ustatus_disableDispatchingTask: {:?}", ustatus_disableDispatchingTask_success);
-    //         //
-    //         //     info!("sleeping for 1 second, sleep_counter, run #: {run},  {sleep_counter}");
-    //         //     task::sleep(Duration::from_secs(1)).await;
-    //         //     sleep_counter += 1;
-    //         // }
-    //     }));
-    // });
 
     let empty_string = "";
     let status_strings = vec![empty_string,
