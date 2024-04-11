@@ -31,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 
 import org.eclipse.uprotocol.core.ubus.UBus;
+import org.eclipse.uprotocol.core.ustreamer.UStreamer;
 import org.eclipse.uprotocol.core.usubscription.USubscription;
 import org.eclipse.uprotocol.core.utwin.UTwin;
 
@@ -43,6 +44,7 @@ public class UCore {
     private final UBus mUBus;
     private final UTwin mUTwin;
     private final USubscription mUSubscription;
+    private final UStreamer mUStreamer;
     private final List<Component> mComponents;
 
     public abstract static class Component {
@@ -59,11 +61,13 @@ public class UCore {
         mUBus = ofNullable(builder.mUBus).orElseGet(() -> new UBus(mContext));
         mUTwin = ofNullable(builder.mUTwin).orElseGet(() -> new UTwin(mContext));
         mUSubscription = ofNullable(builder.mUSubscription).orElseGet(() -> new USubscription(mContext));
+        mUStreamer = ofNullable(builder.mUStreamer).orElseGet(() -> new UStreamer(mContext));
 
         mComponents = List.of(
                 mUBus,
                 mUTwin,
-                mUSubscription);
+                mUSubscription,
+                mUStreamer);
     }
 
     public void init() {
@@ -116,6 +120,7 @@ public class UCore {
         private UBus mUBus;
         private UTwin mUTwin;
         private USubscription mUSubscription;
+        private UStreamer mUStreamer;
 
         public Builder(@NonNull Context context) {
             mContext = context;
@@ -133,6 +138,11 @@ public class UCore {
 
         public @NonNull Builder setUSubscription(USubscription uSubscription) {
             mUSubscription = uSubscription;
+            return this;
+        }
+
+        public @NonNull Builder setUStreamer(UStreamer uStreamer) {
+            mUStreamer = uStreamer;
             return this;
         }
 

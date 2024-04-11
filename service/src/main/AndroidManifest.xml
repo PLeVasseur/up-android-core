@@ -17,6 +17,10 @@
     <permission android:name="uprotocol.permission.ACCESS_UBUS"
         android:protectionLevel="normal" />
 
+    <queries>
+        <package android:name="org.eclipse.uprotocol.android.streamer" />
+    </queries>
+
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
